@@ -1,4 +1,4 @@
-# Test a Quarkus application with Junit%, Mockito and H2 Database
+# Test a Quarkus application with Junit5, Mockito and H2 Database
 
 Simple project that shows you how to test a Quarkus application with Junit5, Mockito and H2 Database.
 
