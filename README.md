@@ -1,6 +1,6 @@
-# Test a Quarkus application with REST Assured and H2 Database
+# Test a Quarkus application with Junit%, Mockito and H2 Database
 
-Simple project that shows you how to test a Quarkus application with REST Assured and H2 Database.
+Simple project that shows you how to test a Quarkus application with Junit5, Mockito and H2 Database.
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
@@ -38,7 +38,7 @@ The application can be packaged using:
 ```shell script
 mvn package
 ```
-It produces the `quarkus-testing-restassured-1.0.0-SNAPSHOT.jar` file in the `target/quarkus-app/` directory.
+It produces the `quarkus-testing-junit-mockito-1.0.0-SNAPSHOT.jar` file in the `target/quarkus-app/` directory.
 Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
 
 If you want to build an _über-jar_, execute the following command:
@@ -46,7 +46,7 @@ If you want to build an _über-jar_, execute the following command:
 mvn package -Dquarkus.package.type=uber-jar
 ```
 
-The application is now runnable using `java -jar target/quarkus-testing-restassured-1.0.0-SNAPSHOT-runner.jar`.
+The application is now runnable using `java -jar target/quarkus-testing-junit-mockito-1.0.0-SNAPSHOT-runner.jar`.
 
 ## What is [REST Assured](https://rest-assured.io/)? 
 "Testing and validating REST services in Java is harder than in dynamic languages such as Ruby and Groovy. REST Assured brings the simplicity of using these languages into the Java domain."

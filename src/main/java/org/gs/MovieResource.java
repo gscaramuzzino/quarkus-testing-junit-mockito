@@ -57,7 +57,7 @@ public class MovieResource {
     if (movieRepository.isPersistent(movie)) {
       return Response.created(URI.create("/movies/" + movie.getId())).build();
     }
-    return Response.status(NOT_FOUND).build();
+    return Response.status(BAD_REQUEST).build();
   }
 
   @PUT

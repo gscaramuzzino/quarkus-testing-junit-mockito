@@ -1,180 +1,223 @@
 package org.gs;
 
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.*;
+import io.quarkus.test.junit.mockito.InjectMock;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.ws.rs.core.MediaType;
+import javax.inject.Inject;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-@Tag("integration")
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class MovieResourceTest {
 
+  @InjectMock MovieRepository movieRepository;
+  @Inject MovieResource movieResource;
+
+  private Movie movie;
+
+  @BeforeEach
+  void setUp() {
+    movie = new Movie();
+    movie.setTitle("FirstMovie");
+    movie.setDescription("MyFirstMovie");
+    movie.setCountry("Planet");
+    movie.setDirector("Me");
+    movie.setId(1L);
+  }
+
   @Test
-  @Order(1)
   void getAll() {
-    given()
-        .when()
-        .get("/movies")
-        .then()
-        .body("size()", equalTo(2))
-        .body("id", hasItems(1, 2))
-        .body("title", hasItems("FirstMovie", "SecondMovie"))
-        .body("director", hasItem("Me"))
-        .body("country", hasItem("Planet"))
-        .statusCode(Response.Status.OK.getStatusCode());
+    List<Movie> movies = new ArrayList();
+    movies.add(movie);
+    Mockito.when(movieRepository.listAll()).thenReturn(movies);
+    Response response = movieResource.getAll();
+    assertNotNull(response);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertNotNull(response.getEntity());
+    List<Movie> entity = (List<Movie>) response.getEntity();
+    assertFalse(entity.isEmpty());
+    assertEquals("FirstMovie", entity.get(0).getTitle());
+    assertEquals(1L, entity.get(0).getId());
+    assertEquals("MyFirstMovie", entity.get(0).getDescription());
+    assertEquals("Planet", entity.get(0).getCountry());
+    assertEquals("Me", entity.get(0).getDirector());
   }
 
   @Test
-  @Order(1)
-  void getById() {
-    given()
-        .when()
-        .get("/movies/1")
-        .then()
-        .body("id", equalTo(1))
-        .body("title", equalTo("FirstMovie"))
-        .body("description", equalTo("MyFirstMovie"))
-        .body("director", equalTo("Me"))
-        .body("country", equalTo("Planet"))
-        .statusCode(Response.Status.OK.getStatusCode());
+  void getByIdOK() {
+    Mockito.when(movieRepository.findByIdOptional(1L)).thenReturn(Optional.of(movie));
+
+    Response response = movieResource.getById(1L);
+    assertNotNull(response);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertNotNull(response.getEntity());
+    Movie entity = (Movie) response.getEntity();
+    assertEquals("FirstMovie", entity.getTitle());
+    assertEquals(1L, entity.getId());
+    assertEquals("MyFirstMovie", entity.getDescription());
+    assertEquals("Planet", entity.getCountry());
+    assertEquals("Me", entity.getDirector());
   }
 
   @Test
-  @Order(1)
   void getByIdKO() {
-    given().when().get("/movies/1000").then().statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    Mockito.when(movieRepository.findByIdOptional(1L)).thenReturn(Optional.empty());
+
+    Response response = movieResource.getById(1L);
+    assertNotNull(response);
+    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    assertNull(response.getEntity());
   }
 
   @Test
-  @Order(1)
-  void getByTitle() {
-    given()
-        .when()
-        .get("/movies/title/FirstMovie")
-        .then()
-        .body("id", equalTo(1))
-        .body("title", equalTo("FirstMovie"))
-        .body("description", equalTo("MyFirstMovie"))
-        .body("director", equalTo("Me"))
-        .body("country", equalTo("Planet"))
-        .statusCode(Response.Status.OK.getStatusCode());
+  void getByTitleOK() {
+
+    PanacheQuery<Movie> query = Mockito.mock(PanacheQuery.class);
+    Mockito.when(query.page(Mockito.any())).thenReturn(query);
+    Mockito.when(query.singleResultOptional()).thenReturn(Optional.of(movie));
+
+    Mockito.when(movieRepository.find("title", "FirstMovie")).thenReturn(query);
+
+    Response response = movieResource.getByTitle("FirstMovie");
+    assertNotNull(response);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertNotNull(response.getEntity());
+    Movie entity = (Movie) response.getEntity();
+    assertEquals("FirstMovie", entity.getTitle());
+    assertEquals(1L, entity.getId());
+    assertEquals("MyFirstMovie", entity.getDescription());
+    assertEquals("Planet", entity.getCountry());
+    assertEquals("Me", entity.getDirector());
   }
 
   @Test
-  @Order(1)
   void getByTitleKO() {
-    given()
-        .when()
-        .get("/movies/title/LastMovie")
-        .then()
-        .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+
+    PanacheQuery<Movie> query = Mockito.mock(PanacheQuery.class);
+    Mockito.when(query.page(Mockito.any())).thenReturn(query);
+    Mockito.when(query.singleResultOptional()).thenReturn(Optional.empty());
+
+    Mockito.when(movieRepository.find("title", "FirstMovie")).thenReturn(query);
+
+    Response response = movieResource.getByTitle("FirstMovie");
+    assertNotNull(response);
+    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    assertNull(response.getEntity());
   }
 
   @Test
-  @Order(2)
   void getByCountry() {
-    given()
-        .when()
-        .get("/movies/country/Planet")
-        .then()
-        .body("size()", equalTo(2))
-        .body("id", hasItems(1, 2))
-        .body("title", hasItems("FirstMovie", "SecondMovie"))
-        .body("director", hasItem("Me"))
-        .body("country", hasItem("Planet"))
-        .statusCode(Response.Status.OK.getStatusCode());
+    List<Movie> movies = new ArrayList();
+    movies.add(movie);
+    Mockito.when(movieRepository.findByCountry("Planet")).thenReturn(movies);
+
+    Response response = movieResource.getByCountry("Planet");
+    assertNotNull(response);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertNotNull(response.getEntity());
+    List<Movie> entity = (List<Movie>) response.getEntity();
+    assertFalse(entity.isEmpty());
+    assertEquals("FirstMovie", entity.get(0).getTitle());
+    assertEquals(1L, entity.get(0).getId());
+    assertEquals("MyFirstMovie", entity.get(0).getDescription());
+    assertEquals("Planet", entity.get(0).getCountry());
+    assertEquals("Me", entity.get(0).getDirector());
   }
 
   @Test
-  @Order(2)
-  void getByCountryKO() {
-    given()
-        .when()
-        .get("/movies/country/Earth")
-        .then()
-        .body("size()", equalTo(0))
-        .statusCode(Response.Status.OK.getStatusCode());
+  void createOK() {
+
+    Mockito.doNothing().when(movieRepository).persist(ArgumentMatchers.any(Movie.class));
+
+    Mockito.when(movieRepository.isPersistent(ArgumentMatchers.any(Movie.class))).thenReturn(true);
+
+    Movie newMovie = new Movie();
+    newMovie.setTitle("SecondMovie");
+    newMovie.setDescription("MySecondMovie");
+    newMovie.setCountry("Planet");
+    newMovie.setDirector("Me");
+    Response response = movieResource.create(newMovie);
+    assertNotNull(response);
+    assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
+    assertNotNull(response.getLocation());
+    assertNull(response.getEntity());
   }
 
   @Test
-  @Order(3)
-  void create() {
-    JsonObject jsonObject =
-        Json.createObjectBuilder()
-            .add("title", "ThirdMovie")
-            .add("description", "MyThirdMovie")
-            .add("director", "Me")
-            .add("country", "Planet")
-            .build();
+  void createKO() {
 
-    given()
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(jsonObject.toString())
-        .when()
-        .post("/movies")
-        .then()
-        .statusCode(Response.Status.CREATED.getStatusCode());
+    Mockito.doNothing().when(movieRepository).persist(ArgumentMatchers.any(Movie.class));
+
+    Mockito.when(movieRepository.isPersistent(ArgumentMatchers.any(Movie.class))).thenReturn(false);
+
+    Movie newMovie = new Movie();
+    newMovie.setTitle("SecondMovie");
+    newMovie.setDescription("MySecondMovie");
+    newMovie.setCountry("Planet");
+    newMovie.setDirector("Me");
+    Response response = movieResource.create(newMovie);
+    assertNotNull(response);
+    assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    assertNull(response.getEntity());
+    assertNull(response.getLocation());
   }
 
   @Test
-  @Order(4)
-  void updateById() {
-    JsonObject jsonObject = Json.createObjectBuilder().add("title", "SecondMovieUpdate").build();
+  void updateByIdOK() {
+    Movie updatedMovie = new Movie();
+    updatedMovie.setTitle("SecondMovie");
 
-    given()
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(jsonObject.toString())
-        .when()
-        .put("/movies/2")
-        .then()
-        .body("id", equalTo(2))
-        .body("title", equalTo("SecondMovieUpdate"))
-        .body("description", equalTo("MySecondMovie"))
-        .body("director", equalTo("Me"))
-        .body("country", equalTo("Planet"))
-        .statusCode(Response.Status.OK.getStatusCode());
+    Mockito.when(movieRepository.findByIdOptional(1L)).thenReturn(Optional.of(movie));
+
+    Response response = movieResource.updateById(1L, updatedMovie);
+
+    assertNotNull(response);
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertNotNull(response.getEntity());
+    Movie entity = (Movie) response.getEntity();
+    assertEquals("SecondMovie", entity.getTitle());
+    assertEquals(1L, entity.getId());
+    assertEquals("MyFirstMovie", entity.getDescription());
+    assertEquals("Planet", entity.getCountry());
+    assertEquals("Me", entity.getDirector());
   }
 
   @Test
-  @Order(4)
   void updateByIdKO() {
-    JsonObject jsonObject = Json.createObjectBuilder().add("title", "SecondMovieUpdate").build();
 
-    given()
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(jsonObject.toString())
-        .when()
-        .put("/movies/2000")
-        .then()
-        .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    Mockito.when(movieRepository.findByIdOptional(1L)).thenReturn(Optional.empty());
+
+    Response response = movieResource.updateById(1L, new Movie());
+
+    assertNotNull(response);
+    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    assertNull(response.getEntity());
   }
 
   @Test
-  @Order(5)
-  void deleteById() {
-    given()
-        .when()
-        .delete("/movies/2")
-        .then()
-        .statusCode(Response.Status.NO_CONTENT.getStatusCode());
-
-    given().when().get("/movies/2").then().statusCode(Response.Status.NOT_FOUND.getStatusCode());
+  void deleteByIdOK() {
+    Mockito.when(movieRepository.deleteById(1L)).thenReturn(true);
+    Response response = movieResource.deleteById(1L);
+    assertNotNull(response);
+    assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
+    assertNull(response.getEntity());
   }
 
   @Test
-  @Order(5)
   void deleteByIdKO() {
-    given()
-        .when()
-        .delete("/movies/2000")
-        .then()
-        .statusCode(Response.Status.NOT_FOUND.getStatusCode());
+    Mockito.when(movieRepository.deleteById(1L)).thenReturn(false);
+    Response response = movieResource.deleteById(1L);
+    assertNotNull(response);
+    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    assertNull(response.getEntity());
   }
 }

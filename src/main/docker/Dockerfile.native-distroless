@@ -7,11 +7,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile.native-distroless -t quarkus/quarkus-testing-restassured .
+# docker build -f src/main/docker/Dockerfile.native-distroless -t quarkus/quarkus-testing-junit-mockito .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/quarkus-testing-restassured
+# docker run -i --rm -p 8080:8080 quarkus/quarkus-testing-junit-mockito
 #
 ###
 FROM quay.io/quarkus/quarkus-distroless-image:1.0
